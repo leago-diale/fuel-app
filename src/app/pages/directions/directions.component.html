@@ -1,0 +1,7 @@
+<google-map height="100%"
+            width="100%"
+            [center]="center"
+            [zoom]="zoom">
+  <map-directions-renderer *ngIf="(directionsResults$ | async) as directionsResults"
+                           [directions]="directionsResults"></map-directions-renderer>
+</google-map>
