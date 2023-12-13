@@ -1,0 +1,11 @@
+<div *ngIf="loading" class="spinner">
+    <div class="spinner-inner"></div>
+</div>
+<div class="body">
+    <div class="login-container">
+        <h2>Login</h2>
+        <input [class.error]="validate?.username" type="text" name="username" placeholder="Username" [(ngModel)]="username" (ngModelChange)="onInputChange('username', $event)" required>
+        <input [class.error]="validate?.password" type="password" name="password" placeholder="Password" [(ngModel)]="password" (ngModelChange)="onInputChange('password', $event)" required>
+        <button type="button" (click)="submitForm()">Submit</button>              
+    </div>
+</div>

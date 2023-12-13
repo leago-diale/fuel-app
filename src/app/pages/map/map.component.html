@@ -1,11 +1,12 @@
 <google-map height="100vh" width="100vw" [center]="center" [zoom]="zoom">
     <map-marker [position]="currentLocation" [options]="markerOptions"></map-marker>
-    <map-marker #marker="mapMarker" 
-                *ngFor="let marker of locationsArr" 
-                [label]="{ text: marker.item['OIL COMPANY'], color: '#484848', fontWeight: 'bold' }" 
-                [position]="marker.position" 
-                (mapClick)="openDirections(marker)" 
-                [options]="marker2Options">
+    <map-marker 
+        *ngFor="let marker of locationsArr" 
+        #marker="mapMarker" 
+        [label]="{ text: marker.item['OIL COMPANY'], color: '#484848', fontWeight: 'bold' }" 
+        [position]="marker.position" 
+        (mapClick)="openDirections(marker)" 
+        [options]="marker2Options">
     </map-marker>
     <map-traffic-layer [autoRefresh]="true"></map-traffic-layer>
 </google-map>

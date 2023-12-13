@@ -1,6 +1,10 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { MapInfoWindow, MapMarker } from '@angular/google-maps';
+import axios from 'axios';
+import { environment } from 'src/environments/environment.prod';
+import { NgForage } from 'ngforage';
+import { v4 as uuidv4 } from 'uuid';
+import { AppServiceService } from 'src/app/services/app-service.service';
 
 @Component({
     selector: 'app-map',
@@ -8,7 +12,6 @@ import { MapInfoWindow, MapMarker } from '@angular/google-maps';
     styleUrls: ['./map.component.css']
 })
 export class MapComponent implements OnInit {
-    @ViewChild(MapInfoWindow) infoWindow: MapInfoWindow | any;
     zoom = 13;
     display: any;
     center: google.maps.LatLngLiteral | any;
@@ -16,8 +19,10 @@ export class MapComponent implements OnInit {
     locationsArr: any = []
     currentLocation: google.maps.LatLngLiteral | any;
     heading: number | any
+    address: string = ''
+    accuracy: any
 
-    constructor(private route: ActivatedRoute) { }
+    constructor(private route: ActivatedRoute, private readonly ngf: NgForage, private service: AppServiceService) { }
 
     ngOnInit(): void {
 
@@ -39,6 +44,7 @@ export class MapComponent implements OnInit {
                 lat: parseFloat(params['lat']),
                 lng: parseFloat(params['lng'])
             }
+            this.getAddress(parseFloat(params['lat']), parseFloat(params['lng']))
         });
 
         const options = {
@@ -54,6 +60,8 @@ export class MapComponent implements OnInit {
                             lng: position.coords.longitude
                         }
                         this.heading = position.coords.heading
+                        this.getAddress(position.coords.latitude, position.coords.longitude)
+                        this.accuracy = position.coords.accuracy.toFixed(2)
                     },
                     (error) => {
                         console.log('Error getting location:', error);
@@ -82,9 +90,50 @@ export class MapComponent implements OnInit {
         },
     };
 
+    async getAddress(latitude: number, longitude: number) {
+        try {
+            const res = await axios.get(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${environment.apiKey}`);
+            this.address = res.data.results[0].formatted_address
+        } catch (error: any) {
+            console.log(error.response.data)
+        }
+    }
+
     openDirections(marker: any) {
         var url = "https://www.google.com/maps/dir/?api=1&destination=" + marker.position.lat + "," + marker.position.lng;
         window.open(url);
+
+        const currentTimestamp = Date.now();
+        const options = { timeZone: 'Africa/Johannesburg' };
+        const formattedDateTime = new Date(currentTimestamp).toLocaleString('en-ZA', options);
+        
+        const uuid = uuidv4()
+        const logPayload = {
+            uuid: uuid,
+            time_stamp: `[${formattedDateTime}]`,
+            log_entry: `Direction from ${this.address} to ${marker.item['OIL COMPANY']} ${marker.item['STREET ADDRESS']}, ${marker.item['SUBURB']}, ${marker.item['TOWN CITY']}`,
+            originLat: this.currentLocation.lat,
+            originLng: this.currentLocation.lng,
+            accuracy: this.accuracy,
+            destLat: marker.position.lat,
+            destLng: marker.position.lng,
+            user_id: localStorage.getItem('fuelAppUser')
+        }
+        this.setItem(uuid, logPayload)
+        this.service.logActions(logPayload)
+    }
+
+    
+    public setItem<T = any>(key: string, data: T): Promise<T> {
+        return this.ngf.setItem<T>(key, data);
+    }
+
+    public getItem<T = any>(key: string): Promise<T | null> {
+        return this.ngf.getItem<T>(key);
+    }
+
+    public removeItem<T = string>(key: string): Promise<void> {
+        return this.ngf.removeItem(key);
     }
 
 }

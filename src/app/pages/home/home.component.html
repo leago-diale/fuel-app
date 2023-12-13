@@ -1,39 +1,50 @@
 <div *ngIf="loading" class="spinner">
     <div class="spinner-inner"></div>
 </div>
+<div *ngIf="!username" [ngStyle]="{ 'z-index': username ? 0 : 1 }" class="overlay"></div>
 <div class="container">
     <img src="./assets/BFM_LOGO.svg" alt="" style="position: absolute; top: 20px; left: 20px; width: 90px;">
     <div class="image">
         <img src="./assets/fuelLogo2.jpg" style="margin-bottom: 20px;" alt="">
     </div>
-    <mat-icon style="position: absolute; top: 20px; right: 20px;"
-        [style.color]="accuracy > 50 ? 'red' : 'green'">location_searching</mat-icon>
-    <h3 *ngIf="direction">{{direction}}</h3>
+    <!-- <mat-icon style="position: absolute; top: 20px; left: 20px;"
+        [style.color]="accuracy > 50 ? 'red' : 'green'">location_searching</mat-icon> -->
+    <div class="input-container" [ngStyle]="{ 'z-index': valid ? 0 : 2 }">
+        <input type="text" class="input" [ngStyle]="{ 'border-color': username ? 'green' : 'red' }"
+            (input)="handleInputChange($event)" [value]="username" placeholder="Enter Your Name">
+        <i *ngIf="username" class="fas fa-check-circle valid-icon"></i>
+        <i *ngIf="!username" class="fas fa-times invalid-icon" (click)="username = ''"></i>
+    </div>
+    <div style="display: flex; justify-content: center; align-items: center; margin-bottom: 10px;">
+        <mat-icon style="padding-right: 20px;" [style.color]="accuracy > 50 ? '' : 'green'">location_searching</mat-icon> 
+        <span style="font-weight: 600;">{{address}}</span>
+    </div>
     <div *ngIf="latitude && longitude && !loading; else other_content">
         <div class="example-action-buttons">
             <h4 mat-button>The closest service stations from you are:</h4>
-            <button mat-button (click)="mapLocations()">
+            <button mat-button (click)="mapLocations()" [ngStyle]="{ 'pointer-events': username ? 'auto' : 'none' }">
                 Click to see locations <span *ngIf="updated">(refreshing...)</span>
                 <mat-icon>location_on</mat-icon>
             </button>
         </div>
         <span style="display: flex; align-items: center;">
             <mat-icon style="color: gold; font-size: 16px; padding-right: 20px;">star</mat-icon>
-            Ratings from high to low (highest rating is the best recommended service station, followed by the distance from your current location)
+            Ratings from high to low (highest rating is the best recommended service station, followed by the distance
+            from your current location)
         </span>
         <span style="display: flex; align-items: center; margin-bottom: 20px;">
             <mat-icon style="font-size: 16px; margin-top: 5px;">location_on</mat-icon>
             Click icon to go to maps
         </span>
         <!-- <span>Heading: {{heading}}</span> -->
-        <mat-accordion class="example-headers-align" multi style="margin-bottom: 20px;">
+        <mat-accordion class="example-headers-align" multi style="margin-bottom: 20px; position: relative;">
             <mat-expansion-panel *ngFor="let item of distArr; let i = index">
                 <mat-expansion-panel-header style="height: auto;">
                     <mat-icon style="margin-right: 10px; display: flex; align-self:center;"
-                        (click)="openDirections(item.item['GPS LATITUDE'],item.item['GPS LONGITUDE'])">location_on</mat-icon>
+                        (click)="openDirections(item.item['GPS LATITUDE'],item.item['GPS LONGITUDE'], item)">location_on</mat-icon>
                     <mat-panel-title style="margin-top: 15px;">
                         <div>
-                            <span style="margin-right: 5px;">{{item.item['OIL COMPANY'] +" - "+ item.item['STREET ADDRESS']}}</span><br/>
+                            <span style="margin-right: 5px;">{{item.item['OIL COMPANY'] +" - "+ item.item['STREET ADDRESS']}}</span><br />
                             <ng-container *ngFor="let star of getStars(i)" style="display: flex; align-items: center;">
                                 <mat-icon style="color: gold; font-size: 16px;">star</mat-icon>
                             </ng-container>
@@ -51,10 +62,10 @@
             </mat-expansion-panel>
         </mat-accordion>
     </div>
-    
-    <ng-template #other_content >
+
+    <ng-template #other_content>
         <div style="text-align: center;">
-            <h4>There was an error getting locations, please retry</h4>
+            <h4>There was an error getting locations, please make sure that your location is turned on and retry</h4>
             <button mat-fab extended color="primary" (click)="reshresh()">
                 <mat-icon style="color: aliceblue;">cached</mat-icon>
                 Retry

@@ -9,7 +9,8 @@ export const environment = {
     loginReq: "ZRFC3/request?sys=prod",
     production: false,
     sys: 'prod',
-    token: 'BK175mqMN0'
+    token: 'BK175mqMN0',
+    apiKey: 'AIzaSyAfFlIMy6mW8ZDL7WHk8BgWaBqIBeBEi0Q'
 };
 
 /*

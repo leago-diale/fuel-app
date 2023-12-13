@@ -7,6 +7,7 @@ import { AppComponent } from './app.component';
 import { DEFAULT_CONFIG, NgForageOptions, NgForageConfig, Driver } from 'ngforage';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { GoogleMapsModule } from '@angular/google-maps'
+import { FormsModule } from '@angular/forms';
 
 import {MatNativeDateModule} from '@angular/material/core'
 import {MatCardModule} from '@angular/material/card';
@@ -35,6 +36,7 @@ import { MapComponent } from './pages/map/map.component';
 import { ServiceWorkerModule } from '@angular/service-worker';
 import { environment } from 'src/environments/environment.prod';
 import { DirectionsComponent } from './pages/directions/directions.component';
+import { LoginComponent } from './pages/login/login.component';
 
 @NgModule({
     declarations: [
@@ -42,6 +44,7 @@ import { DirectionsComponent } from './pages/directions/directions.component';
         HomeComponent,
         MapComponent,
         DirectionsComponent,
+        LoginComponent,
     ],
     imports: [
         BrowserModule,
@@ -74,6 +77,7 @@ import { DirectionsComponent } from './pages/directions/directions.component';
         MatCheckboxModule,
         MatRadioModule,
         GoogleMapsModule,
+        FormsModule,
         ServiceWorkerModule.register('ngsw-worker.js', {
             enabled: environment.production,
           // Register the ServiceWorker as soon as the application is stable

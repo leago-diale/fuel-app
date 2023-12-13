@@ -32,7 +32,7 @@
               "src/styles.css"
             ],
             "scripts": [],
-            "serviceWorker": true,
+            "serviceWorker": false,
             "ngswConfigPath": "ngsw-config.json"
           },
           "configurations": {
@@ -103,5 +103,8 @@
         }
       }
     }
+  },
+  "cli": {
+    "analytics": "f83e5e67-7c5f-4e87-918e-f1401dfa6e90"
   }
 }

@@ -1,7 +1,10 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { AppServiceService } from 'src/app/services/app-service.service';
 import { NgForage } from 'ngforage';
 import { Router } from '@angular/router';
+import axios from 'axios';
+import { environment } from 'src/environments/environment';
+import { v4 as uuidv4 } from 'uuid';
 
 @Component({
     selector: 'app-home',
@@ -13,7 +16,7 @@ export class HomeComponent implements OnInit, OnDestroy {
     title = 'fuel-app';
     latitude: number = 0;
     longitude: number = 0;
-    accuracy: number = 0;
+    accuracy: any;
     fuel_stations = []
     distances: any = []
     loading: boolean = true
@@ -21,15 +24,38 @@ export class HomeComponent implements OnInit, OnDestroy {
     distArr: any = []
     parseInt: any = parseInt
     updated: boolean = false
-    direction: string = ''
     heading: any
+    username: string = '';
+    valid: boolean = false
+    locationStatus: string = '';
+    users = [
+        '8009464',
+        '8009465',
+        '8009466'
+    ]
+    address: string = ''
+    isAppFocused: boolean = true;
 
     constructor(
         private service: AppServiceService,
         private readonly ngf: NgForage,
-        private router: Router
-    ) { }
+        private router: Router,
+    ) {
+        this.checkLocationStatus();
+    }
 
+
+    @HostListener('window:focus', ['$event'])
+    onFocus(event: FocusEvent): void {
+        this.isAppFocused = true;
+        console.log('focused')
+    }
+
+    @HostListener('window:blur', ['$event'])
+    onBlur(event: FocusEvent): void {
+        this.isAppFocused = false;
+        console.log('background')
+    }
     ngOnDestroy() {
         navigator.geolocation.clearWatch(this.watchId)
     }
@@ -39,7 +65,7 @@ export class HomeComponent implements OnInit, OnDestroy {
             .then(() => {
                 this.getShortestDistances()
             }).catch(() => {
-                console.log('Ther was an error')
+                console.log('There was an error')
             })
 
         const options = {
@@ -48,21 +74,67 @@ export class HomeComponent implements OnInit, OnDestroy {
             maximumAge: 0,
         };
         if (navigator.geolocation) {
-                navigator.geolocation.watchPosition(
-                    (position) => {
-                        this.updateLocation(position.coords.latitude, position.coords.longitude)
-                        //this.getDirection(position.coords.latitude, position.coords.longitude)
-                        this.heading = position.coords.heading
-                    },
-                    (error) => {
-                        console.log('Error getting location:', error);
-                    },
-                    options
-                );
+            navigator.geolocation.watchPosition(
+                (position) => {
+                    this.updateLocation(position.coords.latitude, position.coords.longitude)
+                    this.getAddress(position.coords.latitude, position.coords.longitude)
+                    //this.getDirection(position.coords.latitude, position.coords.longitude)
+                    this.heading = position.coords.heading
+                },
+                (error) => {
+                    console.log('Error getting location:', error);
+                },
+                options
+            );
         } else {
             console.log('Geolocation is not supported by this browser.');
             new Error('Geolocation is not supported.');
         }
+        this.getUser()
+    }
+
+    async getAddress(latitude: number, longitude: number) {
+        return
+        try {
+            const res = await axios.get(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${environment.apiKey}`);
+            this.address = res.data.results[0].formatted_address
+        } catch (error: any) {
+            console.log(error.response.data)
+        }
+    }
+
+    checkLocationStatus() {
+        if ('geolocation' in navigator) {
+            navigator.permissions.query({ name: 'geolocation' }).then((result) => {
+                if (result.state === 'prompt') {
+                    alert('Please enable location services on your phone and in your browser settings.');
+                } else if ((result.state !== 'granted')) {
+                    alert('Please enable location services on your phone and in your browser settings.');
+                }
+            });
+        } else {
+            alert('Locations is not supported');
+        }
+    }
+
+
+    handleInputChange(event: any) {
+        localStorage.setItem('fuelAppUser', event.target.value)
+        this.valid = this.users.includes(event.target.value);
+        this.username = event.target.value
+    }
+
+    getUser() {
+        const user = localStorage.getItem('fuelAppUser')
+        if (user) {
+            this.username = user
+            this.users.forEach(element => {
+                if (element == user) {
+                    this.valid = true
+                }
+            });
+        }
+
     }
 
     getLocation(): Promise<void> {
@@ -79,7 +151,7 @@ export class HomeComponent implements OnInit, OnDestroy {
                         (position) => {
                             this.latitude = position.coords.latitude;
                             this.longitude = position.coords.longitude;
-                            this.accuracy = position.coords.accuracy;
+                            this.accuracy = position.coords.accuracy.toFixed(2);
                             resolve();
                         },
                         (error) => {
@@ -213,9 +285,28 @@ export class HomeComponent implements OnInit, OnDestroy {
         }
     }
 
-    openDirections(lat: any, lng: any) {
+    openDirections(lat: any, lng: any, item: any) {
         var url = "https://www.google.com/maps/dir/?api=1&destination=" + parseFloat(lat.replace(',', '.')) + "," + parseFloat(lng.replace(',', '.'));
         window.open(url);
+
+        // Convert timestamp to date and time in South African time zone (ZAR)
+        const currentTimestamp = Date.now();
+        const options = { timeZone: 'Africa/Johannesburg' };
+        const formattedDateTime = new Date(currentTimestamp).toLocaleString('en-ZA', options);
+
+        const uuid = uuidv4()
+        const logPayload = {
+            uuid: uuid,
+            time_stamp: `[${formattedDateTime}]`,
+            log_entry: `Direction to ${item.item['OIL COMPANY']} ${item.item['STREET ADDRESS']}, ${item.item['SUBURB']}, ${item.item['TOWN CITY']}`,
+            originLat: this.latitude,
+            originLng: this.longitude,
+            accuracy: this.accuracy,
+            destLat: item.item['GPS LATITUDE'],
+            destLng: item.item['GPS LONGITUDE'],
+            user_id: localStorage.getItem('fuelAppUser')
+        }
+        this.service.logActions(logPayload)
     }
 
     mapLocations() {
@@ -226,35 +317,6 @@ export class HomeComponent implements OnInit, OnDestroy {
         };
         this.router.navigate(['/map'], { queryParams })
         //this.router.navigateByUrl('/directions')
-    }
-
-    getDirection(lat: number, lon: number) {
-        const latitudeDifference = lat - this.latitude;
-        const longitudeDifference = lon - this.longitude;
-
-        let direction = '';
-
-        if (latitudeDifference > 0) {
-            direction += 'North';
-        } else if (latitudeDifference < 0) {
-            direction += 'South';
-        }
-
-        if (longitudeDifference > 0) {
-            direction += 'East';
-        } else if (longitudeDifference < 0) {
-            direction += 'West';
-        }
-
-        if (direction === '') {
-            direction = 'Stationary';
-        }
-        
-        if (direction == 'Stationary') {
-            this.direction =  `You are ${direction}`
-        }else{
-            this.direction = `You are moving in the ${direction} direction`
-        }
     }
 
     reshresh() {
